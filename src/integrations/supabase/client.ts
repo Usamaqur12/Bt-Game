@@ -5,7 +5,9 @@ import { createDemoSupabaseClient, DEMO_BACKEND_ENABLED } from './demoClient';
 
 // Read from environment variables instead of hardcoding tokens
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const SUPABASE_PUBLISHABLE_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!DEMO_BACKEND_ENABLED && (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY)) {
   throw new Error('Missing Supabase environment variables. Please check your .env.local file.');

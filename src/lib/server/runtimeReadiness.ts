@@ -4,7 +4,7 @@ export type RuntimeCheck = {
   detail: string;
 };
 
-const placeholderPattern = /^(your-|replace-with|https:\/\/your-project|support@example\.com)/i;
+const placeholderPattern = /^(your-|replace-with|https:\/\/your-project|support@example\.com|<[^>]+>|undefined$|null$|changeme$)/i;
 
 export function environmentValueConfigured(name: string) {
   const value = process.env[name]?.trim();
@@ -15,6 +15,10 @@ function allConfigured(...names: string[]) {
   return names.every(environmentValueConfigured);
 }
 
+function anyConfigured(...names: string[]) {
+  return names.some(environmentValueConfigured);
+}
+
 export function getRuntimeReadiness() {
   const productionMode = process.env.PRODUCTION_MODE === "true";
   const demoBackendDisabled = process.env.NEXT_PUBLIC_ENABLE_DEMO_BACKEND !== "true";
@@ -23,7 +27,14 @@ export function getRuntimeReadiness() {
     { id: "production-mode", ready: productionMode, detail: "PRODUCTION_MODE=true" },
     { id: "strict-startup", ready: process.env.ENFORCE_PRODUCTION_READINESS === "true", detail: "Fail-closed production startup lock" },
     { id: "demo-disabled", ready: demoBackendDisabled && demoPresentationDisabled, detail: "Demo backend and demo presentation are disabled" },
-    { id: "database-secrets", ready: allConfigured("NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"), detail: "Supabase public and service credentials" },
+    {
+      id: "database-secrets",
+      ready:
+        environmentValueConfigured("NEXT_PUBLIC_SUPABASE_URL") &&
+        anyConfigured("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "NEXT_PUBLIC_SUPABASE_ANON_KEY") &&
+        anyConfigured("SUPABASE_SECRET_KEY", "SUPABASE_SERVICE_ROLE_KEY"),
+      detail: "Supabase URL, publishable key and server secret",
+    },
     { id: "worker-secrets", ready: allConfigured("SPORTS_FEED_WEBHOOK_SECRET", "SPORTS_PROVIDER_ENCRYPTION_KEY", "CRON_SECRET"), detail: "Sports callbacks, provider encryption and cron authentication" },
     { id: "api-protection", ready: allConfigured("API_RATE_LIMIT_SALT", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"), detail: "Stable privacy salt and distributed rate limiting" },
     { id: "production-branding", ready: allConfigured("NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_SUPPORT_EMAIL") && Boolean(process.env.NEXT_PUBLIC_SITE_URL?.startsWith("https://")), detail: "Public HTTPS origin and support mailbox" },
